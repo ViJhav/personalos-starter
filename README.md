@@ -14,7 +14,7 @@ Download it with **Code → Download ZIP** above, or clone it. Either way, renam
 
 If you want the reasoning behind all of this rather than the files, start with the guide: **<https://www.viyatjhaveri.com/guide/ai-dev/>**
 
-Shared as-is under the MIT license, because it was useful to me and might be useful to you. It is not a product and I do not maintain it as one, so issues are turned off. If you build something good with it, I would genuinely like to hear about it: `vjhaveri@me.com`.
+Shared as-is under the MIT license, because it was useful to me and might be useful to you. It is not a product and I do not maintain it as one, so issues are turned off. If you build something good with it, I would genuinely like to hear about it: `me@viyatjhaveri.com`.
 
 ## Where things live
 
