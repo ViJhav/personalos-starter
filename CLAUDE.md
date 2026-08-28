@@ -75,7 +75,11 @@ _This section is empty on purpose. The setup interview below fills it in, and it
 <!-- INTERVIEW-BLOCK-START -->
 ## First-time setup interview
 
-**Trigger:** the user says something like "let's set this up", "run the setup", or "help me get started". If this block is still present and the user's first message is clearly a setup request, run this. Otherwise ignore it and answer normally.
+**Trigger:** this block being present at all means setup has never been run. So:
+
+- If the user's first message is any kind of setup or getting-started request ("let's set this up", "let's start", "run the setup", "hi", "what do I do now", "what is this"), run the interview.
+- If their first message is a real task instead, do the task, then offer the interview once, in one line, at the end.
+- Either way, never answer as though you already know them. `current-state.md` is still a template at this point and there is nothing to read about their life yet. Say that plainly instead of producing a generic answer — a vague reply here reads as the tool being broken.
 
 **Delete this entire block (from INTERVIEW-BLOCK-START to INTERVIEW-BLOCK-END) when the interview is finished, so it cannot run twice.**
 
