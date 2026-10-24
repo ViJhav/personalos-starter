@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<!--
+  Standalone packing page. One file, no server, no build step.
+
+  Paste a packing list (markdown or plain lines) into "Edit list"; the page
+  turns it into a tap-through checklist. Everything is saved in this browser's
+  local storage, so nothing about the list ever leaves the device, even when
+  the page itself is hosted somewhere public. See README.md beside this file
+  for the list format and for hosting it so it works on a phone.
+
+  Status survives editing the list as long as an item's text is unchanged:
+  an item's id is a hash of its category and text. Rewording an item resets it.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Packing</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --font-interface: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      --font-editorial: "New York", "Iowan Old Style", Georgia, serif;
+      --bg: #f3f1ea; --panel: #fcfbf7; --panel-2: #ebe9e2; --text: #15211c; --muted: #647069;
+      --border: rgba(21, 33, 28, 0.16); --primary: #1f5b45; --secondary: #bd7b2b;
+      --accent-cool: #3f6f92; --accent-clay: #a35a48;
+      --grid-line: rgba(21, 33, 28, 0.016); --ambient: rgba(189, 123, 43, 0.08);
+      --lift: 0 2px 20px rgba(21, 33, 28, 0.055);
+      --heading: var(--text); --faint: var(--muted); --accent: var(--primary);
+      --st-ordered: #a76a00; --st-ordered-bg: rgba(230,159,0,0.13);
+      --st-gathered: #1f5fa0; --st-gathered-bg: rgba(0,114,178,0.11);
+      --st-done: #0b7a5a; --st-done-bg: rgba(0,158,115,0.12);
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #101512; --panel: #171d19; --panel-2: #1d2520; --text: #e7ece9; --muted: #9aa69f;
+      --border: rgba(231, 236, 233, 0.14); --primary: #66b58f; --secondary: #d5a15f;
+      --accent-cool: #7db0d4; --accent-clay: #d98d78;
+      --grid-line: rgba(231, 236, 233, 0.014); --ambient: rgba(102, 181, 143, 0.05);
+      --lift: 0 2px 20px rgba(0, 0, 0, 0.32);
+      --st-ordered: #e0a33f; --st-ordered-bg: rgba(230,159,0,0.16);
+      --st-gathered: #7db0d4; --st-gathered-bg: rgba(125,176,212,0.16);
+      --st-done: #57c79b; --st-done-bg: rgba(87,199,155,0.15);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme]) {
+        color-scheme: dark;
+        --bg: #101512; --panel: #171d19; --panel-2: #1d2520; --text: #e7ece9; --muted: #9aa69f;
+        --border: rgba(231, 236, 233, 0.14); --primary: #66b58f; --secondary: #d5a15f;
+        --accent-cool: #7db0d4; --accent-clay: #d98d78;
+        --grid-line: rgba(231, 236, 233, 0.014); --ambient: rgba(102, 181, 143, 0.05);
+        --lift: 0 2px 20px rgba(0, 0, 0, 0.32);
+        --st-ordered: #e0a33f; --st-ordered-bg: rgba(230,159,0,0.16);
+        --st-gathered: #7db0d4; --st-gathered-bg: rgba(125,176,212,0.16);
+        --st-done: #57c79b; --st-done-bg: rgba(87,199,155,0.15);
+      }
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-interface);
+      background: radial-gradient(circle at 78% 8%, var(--ambient), transparent 30rem), linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px), var(--bg);
+      background-size: auto, 32px 32px, 32px 32px, auto; color: var(--text); min-height: 100vh;
+      -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 48px 72px; }
+    a { color: inherit; }
+    button { font: inherit; }
+
+    header { min-height: 76px; display: flex; align-items: center; gap: 24px; border-bottom: 1px solid var(--border); }
+    .wordmark { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .wordmark-mark { width: 32px; height: 32px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid var(--text); border-radius: 50%; font-size: 14px; font-weight: 750; }
+    .product-name { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+    .header-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+    .theme-btn {
+      min-height: 34px; font-size: 11px; font-weight: 700; color: var(--text);
+      background: var(--panel-2); border: 1px solid var(--border); border-radius: 999px;
+      padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 7px; white-space: nowrap;
+    }
+    .theme-btn:focus-visible, .chip:focus-visible, .item:focus-visible, .sec-summary:focus-visible, .view-tab:focus-visible, .mini-btn:focus-visible {
+      outline: 3px solid var(--primary); outline-offset: 3px;
+    }
+
+    .hero { padding: 52px 0 30px; }
+    .hero .eyebrow { margin-bottom: 12px; color: var(--primary); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+    .hero h1 { font-family: var(--font-editorial); font-size: clamp(38px, 7vw, 62px); font-weight: 400; letter-spacing: -0.025em; line-height: 1.0; color: var(--heading); }
+    .hero-description { max-width: 650px; margin-top: 18px; color: var(--muted); font-size: 15px; line-height: 1.6; }
+
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 26px; }
+    .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+    .stat-label::before { content: ""; width: 7px; height: 7px; display: inline-block; margin-right: 8px; border-radius: 50%; background: var(--stat-accent, var(--primary)); }
+    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--faint); margin-bottom: 10px; }
+    .stat-value { font-size: 26px; font-weight: 600; color: var(--heading); font-variant-numeric: tabular-nums; }
+    .stat-sub { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+    .track { height: 5px; border-radius: 999px; background: var(--panel-2); overflow: hidden; margin-top: 10px; }
+    .track > span { display: block; height: 100%; background: var(--st-done); transition: width 220ms ease; }
+
+    .controls {
+      position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 8px;
+      padding: 10px 0; margin-bottom: 6px; overflow-x: auto; scrollbar-width: none;
+      background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+    .controls::-webkit-scrollbar { display: none; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 7px; flex: none;
+      font-size: 12px; line-height: 1; font-weight: 500; color: var(--muted);
+      background: var(--panel); border: 1px solid var(--border); border-radius: 999px;
+      padding: 8px 12px; cursor: pointer; white-space: nowrap;
+    }
+    .chip[aria-pressed="true"] { color: var(--heading); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: var(--panel-2); }
+    .chip .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+    .chip .count { color: var(--faint); font-variant-numeric: tabular-nums; }
+    .chip-reset { margin-left: auto; border-style: dashed; }
+    .chip-undo { color: var(--heading); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); background: var(--panel-2); font-weight: 600; }
+
+    .section { margin-bottom: 22px; }
+    .sec-summary {
+      display: flex; align-items: center; gap: 10px; width: 100%; cursor: pointer;
+      padding: 14px 4px; border: 0; border-bottom: 1px solid var(--border);
+      background: transparent; text-align: left; color: inherit; -webkit-tap-highlight-color: transparent;
+    }
+    .sec-summary .chev { color: var(--faint); font-size: 11px; transition: transform 0.15s; flex: none; }
+    .sec-summary[aria-expanded="true"] .chev { transform: rotate(90deg); }
+    .sec-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--heading); flex: 1; min-width: 0; }
+    .sec-total { margin-left: auto; font-size: 14px; font-weight: 600; color: var(--heading); font-variant-numeric: tabular-nums; flex: none; }
+    .sec-total.clear { color: var(--st-done); }
+    .sec-body { padding: 16px 4px 4px; }
+    .group-heading { font-family: var(--font-editorial); font-size: 22px; font-weight: 400; color: var(--heading); margin: 34px 0 2px; letter-spacing: -0.02em; }
+
+    .line-list { display: grid; gap: 1px; background: var(--border); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+    .item {
+      background: var(--panel); padding: 11px 14px; display: grid;
+      grid-template-columns: 92px minmax(0, 1fr); gap: 12px; align-items: center;
+      border: 0; width: 100%; text-align: left; color: var(--text); cursor: pointer;
+      -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+      -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    }
+    .item:hover { background: var(--panel-2); }
+    .pill { font-size: 10px; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; border-radius: 999px; padding: 5px 6px; border: 1px solid transparent; }
+    .item[data-status="todo"] .pill { color: var(--faint); background: var(--panel-2); border-color: var(--border); }
+    .item[data-status="ordered"] .pill { color: var(--st-ordered); background: var(--st-ordered-bg); border-color: color-mix(in srgb, var(--st-ordered) 40%, transparent); }
+    .item[data-status="gathered"] .pill { color: var(--st-gathered); background: var(--st-gathered-bg); border-color: color-mix(in srgb, var(--st-gathered) 40%, transparent); }
+    .item[data-status="done"] .pill, .item[data-status="packed"] .pill { color: var(--st-done); background: var(--st-done-bg); border-color: color-mix(in srgb, var(--st-done) 40%, transparent); }
+    .item[data-status="na"] .pill { color: var(--faint); background: transparent; border-color: var(--border); border-style: dashed; }
+    .item-text { font-size: 14px; font-weight: 500; line-height: 1.45; min-width: 0; overflow-wrap: anywhere; }
+    .item-text strong { font-weight: 650; }
+    .item-text em { color: var(--muted); font-style: italic; }
+    .item[data-status="done"] .item-text, .item[data-status="packed"] .item-text { color: var(--muted); font-weight: 400; }
+    .item[data-status="na"] .item-text { color: var(--faint); text-decoration: line-through; }
+
+    .view-tabs { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 14px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 999px; }
+    .view-tab { border: 0; background: transparent; color: var(--muted); font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 999px; cursor: pointer; }
+    .view-tab[aria-selected="true"] { background: var(--panel); color: var(--heading); box-shadow: var(--lift); }
+    .now-heading { display: flex; align-items: baseline; gap: 10px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--heading); margin: 26px 0 10px; }
+    .now-heading .count { color: var(--faint); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .now-heading .mini-btn { margin-left: auto; text-transform: none; letter-spacing: 0; }
+    .now-hint { font-size: 12.5px; color: var(--muted); margin: -4px 0 10px; line-height: 1.5; }
+    .item-cat { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); margin-bottom: 2px; }
+    .decide-row { background: var(--panel); padding: 11px 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+    .decide-q { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+    .decide-actions { display: flex; gap: 6px; }
+    .mini-btn { font-size: 12px; font-weight: 600; color: var(--heading); background: var(--panel-2); border: 1px solid var(--border); border-radius: 999px; padding: 7px 12px; cursor: pointer; white-space: nowrap; }
+    .mini-btn.yes { color: var(--st-done); border-color: color-mix(in srgb, var(--st-done) 40%, var(--border)); background: var(--st-done-bg); }
+    .mini-btn.primary { color: var(--panel); background: var(--primary); border-color: var(--primary); }
+    .mini-btn.danger { color: var(--accent-clay); }
+    .section.stop { margin-bottom: 0; }
+    .section.stop .sec-body { padding-bottom: 14px; }
+    .cleared { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+
+    .cut { font-size: 12px; color: var(--faint); padding: 10px 4px 0 4px; line-height: 1.5; display: flex; gap: 8px; }
+    .cut::before { content: "×"; flex-shrink: 0; }
+    .note { font-size: 12.5px; color: var(--muted); padding: 10px 4px 0; line-height: 1.55; font-style: italic; }
+    .empty-note { font-size: 12.5px; color: var(--faint); padding: 14px 16px; text-align: center; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; }
+
+    /* ── List editor ───────────────────────────────────────────────────── */
+    .editor { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 26px; }
+    .editor[hidden] { display: none; }
+    .editor h2 { font-family: var(--font-editorial); font-size: 24px; font-weight: 400; color: var(--heading); margin-bottom: 6px; }
+    .editor p { font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 10px; }
+    .editor textarea {
+      width: 100%; min-height: 320px; resize: vertical; padding: 12px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text);
+      font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .editor-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .editor-actions .spacer { flex: 1; }
+    .editor details { margin-top: 12px; font-size: 13px; color: var(--muted); }
+    .editor summary { cursor: pointer; font-weight: 600; color: var(--heading); }
+    .editor pre { margin-top: 8px; padding: 10px 12px; background: var(--panel-2); border-radius: 8px; font-size: 12px; line-height: 1.55; white-space: pre-wrap; }
+
+    footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--border); color: var(--faint); font-size: 12px; line-height: 1.6; }
+    .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 50; padding: 11px 16px; border-radius: 999px; background: var(--panel); border: 1px solid var(--border); color: var(--text); font-size: 13px; box-shadow: var(--lift); }
+    .toast[hidden] { display: none; }
+
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+    @media (max-width: 700px) {
+      .wrap { padding: 0 16px 64px; }
+      .hero { padding: 30px 0 22px; }
+      .stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .stats .stat:first-child { grid-column: 1 / -1; }
+      .stat { padding: 13px 15px; }
+      .stat-value { font-size: 22px; }
+      .item { grid-template-columns: 84px minmax(0, 1fr); gap: 10px; padding: 11px 12px; }
+      .group-heading { font-size: 19px; margin-top: 26px; }
+    }
+  </style>
+  <script>
+    try {
+      const theme = localStorage.getItem("packing-theme");
+      if (theme === "light" || theme === "dark") document.documentElement.setAttribute("data-theme", theme);
+    } catch (error) {}
+  </script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="wordmark">
+      <span class="wordmark-mark" aria-hidden="true">✓</span>
+      <span class="product-name">Packing</span>
+    </span>
+    <div class="header-actions">
+      <button class="theme-btn" id="edit-btn" type="button">✎ Edit list</button>
+      <button class="theme-btn" id="theme-btn" type="button" aria-label="Change color theme"><span id="theme-icon" aria-hidden="true">◐</span> <span id="theme-text">Auto</span></button>
+    </div>
+  </header>
+
+  <section class="hero" aria-labelledby="packing-title">
+    <p class="eyebrow">Trip prep</p>
+    <h1 id="packing-title">Packing.</h1>
+    <p class="hero-description" id="trip-meta"></p>
+  </section>
+
+  <section class="editor" id="editor" hidden aria-labelledby="editor-title">
+    <h2 id="editor-title">Your list</h2>
+    <p>Paste your packing list below: one item per line, with <code>## Headings</code> for each place in the house (bathroom, closet, desk). Then hit Save. Editing later keeps every item's status, as long as you don't reword it.</p>
+    <textarea id="editor-text" spellcheck="false" aria-label="Packing list"></textarea>
+    <details>
+      <summary>Format and tags</summary>
+      <pre># Trip name             ← the page title
+First line under it     ← shown under the title
+
+## Bathroom             ← a category, one stop around the house
+- Toothbrush
+- Sunscreen {order}     ← adds an "Ordered" step: buy it first
+- Contacts {decide: wearing them this trip?}
+- Swimsuit {after: laundry}   ← waits until you mark "laundry" done
+- Phone charger {day-of}      ← waits for the day you leave
+- [x] Passport          ← starts as packed
+
+## Before leaving {todo}  ← a to-do section: tap = done
+- Water plants
+- Hold the mail
+
+_A line in underscores is a note._
+(Cut: hair dryer, hotel has one)  ← kept visible, not tickable</pre>
+    </details>
+    <div class="editor-actions">
+      <button class="mini-btn primary" id="editor-save" type="button">Save list</button>
+      <button class="mini-btn" id="editor-cancel" type="button">Cancel</button>
+      <button class="mini-btn" id="editor-example" type="button">Load example</button>
+      <span class="spacer"></span>
+      <button class="mini-btn" id="export-btn" type="button">Export backup</button>
+      <button class="mini-btn" id="import-btn" type="button">Import backup</button>
+      <button class="mini-btn danger" id="reset-btn" type="button">New trip (clear statuses)</button>
+      <input type="file" id="import-file" accept="application/json,.json" hidden />
+    </div>
+  </section>
+
+  <div id="board">
+    <div class="stats">
+      <div class="stat" style="--stat-accent: var(--st-done)">
+        <div class="stat-label">Done</div>
+        <div class="stat-value" id="stat-done">—</div>
+        <div class="stat-sub" id="stat-done-sub"></div>
+        <div class="track"><span id="overall-bar" style="width:0%"></span></div>
+      </div>
+      <div class="stat" style="--stat-accent: var(--accent-clay)">
+        <div class="stat-label">Still open</div>
+        <div class="stat-value" id="stat-open">—</div>
+        <div class="stat-sub" id="stat-open-sub"></div>
+      </div>
+      <div class="stat" style="--stat-accent: var(--accent-cool)">
+        <div class="stat-label">In progress</div>
+        <div class="stat-value" id="stat-progress">—</div>
+        <div class="stat-sub">ordered or gathered, not packed</div>
+      </div>
+    </div>
+
+    <div class="view-tabs" role="tablist">
+      <button class="view-tab" type="button" role="tab" data-view="now">Now</button>
+      <button class="view-tab" type="button" role="tab" data-view="all">By category</button>
+    </div>
+    <div class="controls" id="status-filters"></div>
+    <div id="content"></div>
+  </div>
+
+  <footer>
+    Tap an item to move it along (to do → gathered → packed). Long-press for n/a. Saved in this browser only: use Export backup to move it to another device.
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+  // ---- storage ---------------------------------------------------------
+  // One record: the list as typed, plus a status per item / flag id. Kept
+  // together so an export is the whole trip and an import restores it exactly.
+
+  const STORE_KEY = "packing-page:v1";
+  const EXAMPLE = `# Weekend away
+Friday to Sunday
+
+## Bathroom
+- Toothbrush + toothpaste
+- Deodorant
+- Sunscreen {order}
+- Contacts + case {decide: wearing contacts this trip?}
+- Medications
+
+## Closet
+- 2 tops
+- Jeans
+- Swimsuit {after: laundry}
+- Jacket {decide: will it be cold?}
+- Sleepwear
+
+## Desk
+- Laptop + charger
+- Phone charger {day-of}
+- Headphones
+- Passport / ID
+
+## Before leaving {todo}
+- Water the plants
+- Take the trash out
+- Lock the windows
+
+_Start in the bathroom: it's the smallest stop._`;
+
+  function loadStore() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+      if (raw && typeof raw.list === "string" && raw.status && typeof raw.status === "object") return raw;
+    } catch (error) {}
+    return { list: "", status: {} };
+  }
+  function saveStore() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); return true; }
+    catch (error) { toast("Could not save in this browser. Private browsing may be blocking storage."); return false; }
+  }
+
+  let store = loadStore();
+
+  // ---- parsing ---------------------------------------------------------
+  // `## Heading` opens a category; `**Bold**` lines inside one open sub-groups.
+  // Any bullet (`- item` or `- [ ] item`) is an item, and so is a bare line
+  // once a list has started, so a list pasted from Notes with no dashes works.
+
+  const ITEM_RE = /^\s*[-*•]\s*\[([ xX~\/\-])\]\s*(.+?)\s*$/;
+  const PLAIN_ITEM_RE = /^\s*(?:[-*•]|\d+[.)])\s+(.+?)\s*$/;
+  const HEADING_RE = /^#{2,3}\s+(.*?)\s*$/;
+  const CATEGORY_RE = /^\*\*(.+?)\*\*:?\s*$/;
+  const NOTE_RE = /^_(.+)_\s*$/;
+  const CUT_RE = /^_?\((?:cut):\s*(.*?)\)_?\.?\s*$/i;
+  const WHEN_RE = /\s*\{\s*(after|decide|day-of)\s*(?::\s*([^}]*?))?\s*\}\s*$/i;
+  const ORDER_RE = /\s*\{\s*order\s*\}/ig;
+  const TODO_RE = /\s*\{\s*todo\s*\}/i;
+  const SEED_BY_MARK = { " ": "todo", "x": "done", "X": "done", "-": "na", "~": "na", "/": "gathered" };
+
+  // A stable 12-hex id from text (cyrb53). Not cryptographic; it only needs to
+  // keep an item's status attached to it across edits of the rest of the list.
+  function hashId(text) {
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return ((h2 >>> 0).toString(16).padStart(8, "0") + (h1 >>> 0).toString(16).padStart(8, "0")).slice(0, 12);
+  }
+  function itemId(sectionLabel, text) { return hashId(sectionLabel.toLowerCase() + "|" + text); }
+
+  function escapeText(text) {
+    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  // Escape first, then add the few tags a list uses; nothing typed can inject markup.
+  function inlineHtml(text) {
+    let out = escapeText(text);
+    out = out.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$2");
+    out = out.replace(/\[\[([^\]]+)\]\]/g, (m, a) => a.split("/").pop());
+    out = out.replace(/`([^`]+)`/g, "<code>$1</code>");
+    out = out.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    out = out.replace(/(^|[^\w\\])_(.+?)_(?!\w)/g, "$1<em>$2</em>");
+    return out;
+  }
+  function plainText(text) {
+    return text.replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, "$2").replace(/\[\[([^\]]+)\]\]/g, (m, a) => a.split("/").pop()).replace(/[`*_]/g, "").trim();
+  }
+
+  function splitWhen(text) {
+    const match = text.match(WHEN_RE);
+    if (!match) return [text, null];
+    let kind = match[1].toLowerCase();
+    let label = (match[2] || "").trim();
+    if (kind === "day-of") { kind = "after"; label = "day of"; }
+    const rest = text.slice(0, match.index);
+    if (!label) return [rest, null];
+    return [rest, { kind, label }];
+  }
+
+  function parseList(markdown) {
+    const meta = { title: "", subtitle: "" };
+    const sections = [];
+    const preamble = [];
+    let section = null, group = null;
+
+    const openSection = (label, kind) => {
+      section = { key: hashId("s|" + label + "|" + sections.length), label, kind, groups: [] };
+      sections.push(section);
+      group = null;
+    };
+    const openGroup = label => {
+      group = { label, items: [], cuts: [], note: "" };
+      section.groups.push(group);
+    };
+
+    for (const raw of markdown.split(/\r?\n/)) {
+      const line = raw.replace(/\s+$/, "");
+      if (!line.trim()) continue;
+
+      if (/^#\s/.test(line)) { meta.title = plainText(line.slice(2)); continue; }
+
+      const heading = line.match(HEADING_RE);
+      if (heading) {
+        const isTodo = TODO_RE.test(heading[1]);
+        openSection(plainText(heading[1].replace(TODO_RE, "")), isTodo ? "action" : "packing");
+        continue;
+      }
+
+      const category = line.match(CATEGORY_RE);
+      if (category) {
+        if (!section) openSection("Packing", "packing");
+        openGroup(plainText(category[1]));
+        continue;
+      }
+
+      const cut = line.match(CUT_RE);
+      if (cut) {
+        if (!section) openSection("Packing", "packing");
+        if (!group) openGroup("");
+        group.cuts.push("Cut: " + inlineHtml(cut[1]));
+        continue;
+      }
+
+      const note = line.match(NOTE_RE);
+      if (note && !ITEM_RE.test(line)) {
+        if (section && group) group.note = (group.note + " " + inlineHtml(note[1])).trim();
+        else if (section) section.lede = inlineHtml(note[1]);
+        else preamble.push(plainText(note[1]));
+        continue;
+      }
+
+      let mark = null, text = null;
+      const boxed = line.match(ITEM_RE);
+      const plain = line.match(PLAIN_ITEM_RE);
+      if (boxed) { mark = boxed[1]; text = boxed[2]; }
+      else if (plain) { mark = " "; text = plain[1]; }
+      else if (section) { mark = " "; text = line.trim(); }   // bare line inside a category
+      else { preamble.push(plainText(line.trim())); continue; }
+
+      if (!section) openSection("Packing", "packing");
+      if (!group) openGroup("");
+
+      const order = ORDER_RE.test(text);
+      ORDER_RE.lastIndex = 0;
+      text = text.replace(ORDER_RE, "").replace(/\s+$/, "");
+      let when;
+      [text, when] = splitWhen(text);
+      text = text.trim();
+      if (!text) continue;
+      if (when) {
+        // One flag per blocker (shared by every item behind it), one per decision.
+        const scope = when.kind === "after" ? when.label.toLowerCase() : itemId(section.label, text);
+        when.key = hashId("~" + when.kind + "|" + scope);
+      }
+      let seed = SEED_BY_MARK[mark] || "todo";
+      if (seed === "done" && section.kind === "packing") seed = "packed";
+      group.items.push({
+        id: itemId(section.label, text),
+        html: inlineHtml(text),
+        plain: plainText(text),
+        kind: section.kind,
+        seed, when, order,
+      });
+    }
+
+    meta.subtitle = preamble.join(" ");
+    const kept = sections.filter(s => s.groups.some(g => g.items.length || g.cuts.length));
+    // A bare list with no headings and no dashes: every line is an item.
+    if (!kept.length && preamble.length > 1 && !/^##\s/m.test(markdown)) {
+      const title = markdown.match(/^#\s.*$/m);
+      return parseList((title ? title[0] + "\n" : "") + "## Packing\n" + markdown.replace(/^#\s.*$/m, ""));
+    }
+    return { meta, sections: kept };
+  }
+
+  // ---- model -----------------------------------------------------------
+
+  const STATUS_META = {
+    todo:     { label: "To do",    chip: "todo" },
+    ordered:  { label: "Ordered",  chip: "ordered" },
+    gathered: { label: "Gathered", chip: "gathered" },
+    packed:   { label: "Packed",   chip: "done" },
+    done:     { label: "Done",     chip: "done" },
+    na:       { label: "N/A",      chip: "na" },
+  };
+  const CHIPS = [
+    { key: "todo", label: "To do", color: "var(--faint)", on: true },
+    { key: "ordered", label: "Ordered", color: "var(--st-ordered)", on: true },
+    { key: "gathered", label: "Gathered", color: "var(--st-gathered)", on: true },
+    { key: "done", label: "Done", color: "var(--st-done)", on: false },
+    { key: "na", label: "N/A", color: "var(--border)", on: false },
+  ];
+  // n/a is off the tap cycle on purpose: it is a long-press, so a fast run
+  // down the list can never park an item there by accident.
+  const CYCLES = {
+    action: ["todo", "done"],
+    packing: ["todo", "gathered", "packed"],
+    ordering: ["todo", "ordered", "gathered", "packed"],
+  };
+
+  let PAGE = { title: "", subtitle: "" };
+  let BLOCKS = [];
+  let ITEMS = new Map();
+  let GROUP_OF = new Map();
+
+  function build() {
+    const { meta, sections } = parseList(store.list);
+    PAGE = meta;
+    BLOCKS = [];
+    sections.forEach(section => {
+      const named = section.groups.some(g => g.label);
+      section.groups.forEach((group, index) => {
+        BLOCKS.push({
+          key: `${section.key}::${group.label || "_"}`,
+          label: group.label || section.label,
+          items: group.items,
+          cuts: group.cuts,
+          note: group.note,
+          heading: named && index === 0 ? section.label : "",
+        });
+      });
+    });
+    ITEMS = new Map();
+    GROUP_OF = new Map();
+    BLOCKS.forEach(block => block.items.forEach(item => {
+      // A duplicate line keeps the first one; two identical items can't be told apart.
+      if (!ITEMS.has(item.id)) { ITEMS.set(item.id, item); GROUP_OF.set(item.id, block.label); }
+    }));
+    BLOCKS.forEach(block => { block.items = block.items.filter(item => ITEMS.get(item.id) === item); });
+
+    document.title = PAGE.title ? `${PAGE.title} · Packing` : "Packing";
+    document.getElementById("packing-title").textContent = PAGE.title || "Packing.";
+    document.getElementById("trip-meta").textContent = PAGE.subtitle;
+  }
+
+  const VIEW_KEY = "packing-page:view";
+  const COLLAPSE_KEY = "packing-page:collapsed";
+  let view = "now";
+  try { if (localStorage.getItem(VIEW_KEY) === "all") view = "all"; } catch (error) {}
+  document.querySelectorAll(".view-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      view = tab.dataset.view;
+      try { localStorage.setItem(VIEW_KEY, view); } catch (error) {}
+      render();
+    });
+  });
+
+  const enabledChips = new Set(CHIPS.filter(c => c.on).map(c => c.key));
+  const collapsed = new Set((() => {
+    try { const raw = JSON.parse(localStorage.getItem(COLLAPSE_KEY) || "[]"); return Array.isArray(raw) ? raw : []; }
+    catch (error) { return []; }
+  })());
+  function saveCollapsed() { try { localStorage.setItem(COLLAPSE_KEY, JSON.stringify([...collapsed])); } catch (error) {} }
+
+  const content = document.getElementById("content");
+  const toastEl = document.getElementById("toast");
+  let toastTimer = null;
+  function toast(message) {
+    toastEl.textContent = message;
+    toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.hidden = true; }, 3200);
+  }
+
+  function statusOf(item) { return store.status[item.id] || item.seed || "todo"; }
+  function chipOf(item) { return (STATUS_META[statusOf(item)] || STATUS_META.todo).chip; }
+  function visible(item) { return enabledChips.has(chipOf(item)); }
+  function flagDone(key) { return store.status[key] === "done"; }
+
+  // ---- rendering -------------------------------------------------------
+
+  function renderChips() {
+    const root = document.getElementById("status-filters");
+    root.innerHTML = "";
+    const counts = {};
+    ITEMS.forEach(item => { const c = chipOf(item); counts[c] = (counts[c] || 0) + 1; });
+
+    if (undoStack.length) {
+      const last = undoStack[undoStack.length - 1];
+      const back = STATUS_META[last.from];
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "chip chip-undo";
+      button.innerHTML = `↩ Undo <span class="count">${back ? back.label : ""}</span>`;
+      button.addEventListener("click", undo);
+      root.appendChild(button);
+    }
+
+    CHIPS.forEach(chip => {
+      if (!counts[chip.key]) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "chip";
+      button.setAttribute("aria-pressed", String(enabledChips.has(chip.key)));
+      button.innerHTML = `<span class="dot" style="background:${chip.color}"></span>${chip.label} <span class="count">${counts[chip.key]}</span>`;
+      button.addEventListener("click", () => {
+        if (enabledChips.has(chip.key)) enabledChips.delete(chip.key);
+        else enabledChips.add(chip.key);
+        render();
+      });
+      root.appendChild(button);
+    });
+
+    const showingAll = CHIPS.every(c => enabledChips.has(c.key));
+    const reset = document.createElement("button");
+    reset.type = "button";
+    reset.className = "chip chip-reset";
+    reset.textContent = showingAll ? "Hide done" : "Show all";
+    reset.addEventListener("click", () => {
+      enabledChips.clear();
+      (showingAll ? CHIPS.filter(c => c.on) : CHIPS).forEach(c => enabledChips.add(c.key));
+      render();
+    });
+    root.appendChild(reset);
+  }
+
+  function renderStats() {
+    let done = 0, skipped = 0, progress = 0;
+    ITEMS.forEach(item => {
+      const chip = chipOf(item);
+      if (chip === "done") done += 1;
+      else if (chip === "na") skipped += 1;
+      else if (chip !== "todo") progress += 1;
+    });
+    const target = ITEMS.size - skipped;
+    const pct = target ? Math.round((done / target) * 100) : 0;
+    document.getElementById("stat-done").textContent = `${done}/${target}`;
+    document.getElementById("stat-done-sub").textContent = `${pct}% of what's in scope`;
+    document.getElementById("overall-bar").style.width = `${pct}%`;
+    document.getElementById("stat-open").textContent = target - done;
+    document.getElementById("stat-open-sub").textContent = skipped ? `${skipped} marked n/a` : "nothing skipped";
+    document.getElementById("stat-progress").textContent = progress;
+  }
+
+  function renderItem(item, withCategory = false) {
+    const status = statusOf(item);
+    const meta = STATUS_META[status] || STATUS_META.todo;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "item";
+    button.dataset.status = status;
+    button.dataset.id = item.id;
+    button.setAttribute("aria-label", `${item.plain}, ${meta.label}. Activate to advance, long press for not applicable.`);
+    const category = withCategory ? `<span class="item-cat">${escapeText(GROUP_OF.get(item.id) || "")}</span>` : "";
+    button.innerHTML = `<span class="pill">${meta.label}</span><span class="item-text">${category}${item.html}</span>`;
+    attachHandlers(button, item);
+    return button;
+  }
+
+  function render() {
+    const board = document.getElementById("board");
+    board.hidden = ITEMS.size === 0;
+    if (board.hidden) return;
+    renderChips();
+    renderStats();
+    content.innerHTML = "";
+    document.querySelectorAll(".view-tab").forEach(tab => tab.setAttribute("aria-selected", String(tab.dataset.view === view)));
+    if (view === "now") renderNow();
+    else renderAll();
+  }
+
+  // ---- Now view --------------------------------------------------------
+  // Decisions first, then what can be packed this minute walked as stops (one
+  // category, one place in the house), then what's waiting and on what.
+
+  const stopOverride = new Map();
+  let lastUnfinished = null;
+
+  function nowBucket(item) {
+    if (item.kind !== "packing") return null;
+    if (!item.when) return "now";
+    if (item.when.kind === "decide") return flagDone(item.when.key) ? "now" : "decide";
+    return flagDone(item.when.key) ? "now" : "wait";
+  }
+
+  function nowHeading(text, count, extra) {
+    const heading = document.createElement("h3");
+    heading.className = "now-heading";
+    heading.innerHTML = `<span>${text}</span>${count === null ? "" : `<span class="count">${count}</span>`}`;
+    if (extra) heading.appendChild(extra);
+    return heading;
+  }
+
+  function miniButton(label, className, onClick) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `mini-btn ${className || ""}`.trim();
+    button.textContent = label;
+    button.addEventListener("click", onClick);
+    return button;
+  }
+
+  function renderNow() {
+    const decide = [], now = [], waiting = new Map(), cleared = new Map();
+    let actions = 0;
+    ITEMS.forEach(item => {
+      const bucket = nowBucket(item);
+      if (!bucket) { if (chipOf(item) !== "done" && chipOf(item) !== "na") actions += 1; return; }
+      if (item.when && item.when.kind === "after" && flagDone(item.when.key)) cleared.set(item.when.key, item.when.label);
+      if (!visible(item)) return;
+      if (bucket === "decide") { if (chipOf(item) !== "na") decide.push(item); }
+      else if (bucket === "now") now.push(item);
+      else {
+        if (!waiting.has(item.when.key)) waiting.set(item.when.key, { label: item.when.label, items: [] });
+        waiting.get(item.when.key).items.push(item);
+      }
+    });
+
+    if (decide.length) {
+      content.appendChild(nowHeading("Decide first", decide.length));
+      const hint = document.createElement("p");
+      hint.className = "now-hint";
+      hint.textContent = "One call each. Yes moves it into Pack now; no marks it n/a.";
+      content.appendChild(hint);
+      const list = document.createElement("div");
+      list.className = "line-list";
+      decide.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "decide-row";
+        const text = document.createElement("span");
+        text.className = "item-text";
+        text.innerHTML = `${item.html}<span class="decide-q">${escapeText(item.when.label)}</span>`;
+        const buttons = document.createElement("span");
+        buttons.className = "decide-actions";
+        buttons.appendChild(miniButton("Yes", "yes", () => patch(item.when.key, "done")));
+        buttons.appendChild(miniButton("No", "", () => patch(item.id, "na")));
+        row.appendChild(text);
+        row.appendChild(buttons);
+        list.appendChild(row);
+      });
+      content.appendChild(list);
+    }
+
+    const stops = new Map();
+    now.forEach(item => {
+      const key = GROUP_OF.get(item.id) || "";
+      if (!stops.has(key)) stops.set(key, []);
+      stops.get(key).push(item);
+    });
+    const isOpen = item => chipOf(item) !== "done" && chipOf(item) !== "na";
+    const unfinished = key => stops.get(key).some(isOpen);
+    const nowUnfinished = new Set([...stops.keys()].filter(unfinished));
+    if (lastUnfinished) lastUnfinished.forEach(key => { if (!nowUnfinished.has(key)) stopOverride.delete(key); });
+    lastUnfinished = nowUnfinished;
+    const firstUnfinished = [...stops.keys()].find(unfinished) || null;
+    const stopOpen = key => stopOverride.has(key) ? stopOverride.get(key) : key === firstUnfinished;
+    const openTotal = now.filter(isOpen).length;
+    const stopsLeft = nowUnfinished.size;
+
+    content.appendChild(nowHeading("Pack now", stopsLeft ? `${openTotal} · ${stopsLeft} stop${stopsLeft === 1 ? "" : "s"}` : openTotal));
+    if (now.length) {
+      stops.forEach((items, key) => {
+        const remaining = items.filter(isOpen).length;
+        const isActive = stopOpen(key);
+        const element = document.createElement("section");
+        element.className = "section stop";
+        const summary = document.createElement("button");
+        summary.type = "button";
+        summary.className = "sec-summary";
+        summary.setAttribute("aria-expanded", String(isActive));
+        summary.innerHTML = `<span class="chev" aria-hidden="true">▶</span><span class="sec-title">${escapeText(key)}</span><span class="sec-total${remaining ? "" : " clear"}">${remaining || "✓"}</span>`;
+        summary.addEventListener("click", () => { stopOverride.set(key, !isActive); render(); });
+        element.appendChild(summary);
+        if (isActive) {
+          const body = document.createElement("div");
+          body.className = "sec-body";
+          const list = document.createElement("div");
+          list.className = "line-list";
+          items.forEach(item => list.appendChild(renderItem(item)));
+          body.appendChild(list);
+          element.appendChild(body);
+        }
+        content.appendChild(element);
+      });
+    } else {
+      const empty = document.createElement("p");
+      empty.className = "empty-note";
+      empty.textContent = decide.length ? "Nothing yet. Make the calls above." : (waiting.size ? "Nothing packable right now. Clear a blocker below." : "All packed.");
+      content.appendChild(empty);
+    }
+
+    waiting.forEach((group, key) => {
+      const clear = miniButton("✓ Done, unlock these", "yes", () => patch(key, "done"));
+      content.appendChild(nowHeading(`Waiting on: ${escapeText(group.label)}`, group.items.length, clear));
+      const list = document.createElement("div");
+      list.className = "line-list";
+      group.items.forEach(item => list.appendChild(renderItem(item, true)));
+      content.appendChild(list);
+    });
+
+    if (cleared.size) {
+      const row = document.createElement("div");
+      row.className = "cleared";
+      cleared.forEach((label, key) => row.appendChild(miniButton(`${label} ✓ (undo)`, "", () => patch(key, "todo"))));
+      content.appendChild(row);
+    }
+
+    if (actions) {
+      const hint = document.createElement("p");
+      hint.className = "now-hint";
+      hint.style.marginTop = "22px";
+      hint.textContent = `${actions} to-do${actions === 1 ? "" : "s"} not shown here: see By category.`;
+      content.appendChild(hint);
+    }
+  }
+
+  // ---- category view ---------------------------------------------------
+
+  function renderAll() {
+    let shownItems = 0;
+    BLOCKS.forEach(block => {
+      const items = block.items.filter(visible);
+      const isCollapsed = collapsed.has(block.key);
+      const done = block.items.filter(i => chipOf(i) === "done").length;
+      const target = block.items.filter(i => chipOf(i) !== "na").length;
+
+      if (block.heading) {
+        const heading = document.createElement("h2");
+        heading.className = "group-heading";
+        heading.textContent = block.heading;
+        content.appendChild(heading);
+      }
+
+      const element = document.createElement("section");
+      element.className = "section";
+      const summary = document.createElement("button");
+      summary.type = "button";
+      summary.className = "sec-summary";
+      summary.setAttribute("aria-expanded", String(!isCollapsed));
+      summary.innerHTML = `<span class="chev" aria-hidden="true">▶</span><span class="sec-title">${escapeText(block.label)}</span><span class="sec-total${done === target ? " clear" : ""}">${done}/${target}</span>`;
+      summary.addEventListener("click", () => {
+        if (collapsed.has(block.key)) collapsed.delete(block.key);
+        else collapsed.add(block.key);
+        saveCollapsed();
+        render();
+      });
+      element.appendChild(summary);
+
+      if (!isCollapsed) {
+        const body = document.createElement("div");
+        body.className = "sec-body";
+        if (items.length) {
+          const list = document.createElement("div");
+          list.className = "line-list";
+          items.forEach(item => { list.appendChild(renderItem(item)); shownItems += 1; });
+          body.appendChild(list);
+        } else if (block.items.length) {
+          const clear = document.createElement("p");
+          clear.className = "empty-note";
+          clear.textContent = "Nothing open here.";
+          body.appendChild(clear);
+        }
+        block.cuts.forEach(cut => {
+          const note = document.createElement("p");
+          note.className = "cut";
+          note.innerHTML = cut;
+          body.appendChild(note);
+        });
+        if (block.note) {
+          const note = document.createElement("p");
+          note.className = "note";
+          note.innerHTML = block.note;
+          body.appendChild(note);
+        }
+        element.appendChild(body);
+      }
+      content.appendChild(element);
+    });
+
+    if (!shownItems && !collapsed.size) {
+      const empty = document.createElement("p");
+      empty.className = "empty-note";
+      empty.textContent = "Nothing matches the current filters. Hit Show all.";
+      content.appendChild(empty);
+    }
+  }
+
+  // ---- interaction -----------------------------------------------------
+
+  function nextStatus(item) {
+    const cycle = item.kind === "packing" && item.order ? CYCLES.ordering : CYCLES[item.kind] || CYCLES.action;
+    const status = statusOf(item);
+    if (status === "ordered" && !cycle.includes(status)) return "gathered";
+    return cycle[(cycle.indexOf(status) + 1) % cycle.length];
+  }
+
+  const DRAG_SLOP = 10;
+  function attachHandlers(button, item) {
+    let longPressed = false, dragged = false, timer = null, originX = 0, originY = 0;
+    const toggleNa = () => patch(item.id, statusOf(item) === "na" ? "todo" : "na");
+
+    button.addEventListener("pointerdown", event => {
+      longPressed = false; dragged = false;
+      originX = event.clientX; originY = event.clientY;
+      timer = setTimeout(() => {
+        longPressed = true;
+        if (navigator.vibrate) navigator.vibrate(12);
+        toggleNa();
+      }, 480);
+    });
+    // A tap that travelled was a scroll, not a choice.
+    button.addEventListener("pointermove", event => {
+      if (dragged) return;
+      if (Math.abs(event.clientX - originX) > DRAG_SLOP || Math.abs(event.clientY - originY) > DRAG_SLOP) {
+        dragged = true;
+        clearTimeout(timer);
+      }
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach(name => button.addEventListener(name, () => clearTimeout(timer)));
+    button.addEventListener("contextmenu", event => {
+      event.preventDefault();
+      clearTimeout(timer);
+      longPressed = true;
+      toggleNa();
+    });
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      if (dragged) { dragged = false; return; }
+      if (longPressed) { longPressed = false; return; }
+      patch(item.id, nextStatus(item));
+    });
+  }
+
+  // A stack, not one step: mis-taps come in runs when moving fast down a list.
+  const undoStack = [];
+  const UNDO_DEPTH = 25;
+  function undo() {
+    const last = undoStack.pop();
+    if (last) patch(last.id, last.from, false);
+  }
+
+  function patch(id, status, record = true) {
+    const item = ITEMS.get(id);
+    if (record) {
+      undoStack.push({ id, from: item ? statusOf(item) : (store.status[id] || "todo") });
+      if (undoStack.length > UNDO_DEPTH) undoStack.shift();
+    }
+    store.status[id] = status;
+    saveStore();
+    render();
+  }
+
+  // ---- editor, export, import ----------------------------------------
+
+  const editor = document.getElementById("editor");
+  const editorText = document.getElementById("editor-text");
+
+  function openEditor() {
+    editorText.value = store.list;
+    editor.hidden = false;
+    document.getElementById("editor-cancel").hidden = !store.list;
+    editorText.focus();
+  }
+  function closeEditor() { editor.hidden = true; }
+
+  document.getElementById("edit-btn").addEventListener("click", () => editor.hidden ? openEditor() : closeEditor());
+  document.getElementById("editor-cancel").addEventListener("click", closeEditor);
+  document.getElementById("editor-example").addEventListener("click", () => {
+    if (editorText.value.trim() && !confirm("Replace what's in the box with the example?")) return;
+    editorText.value = EXAMPLE;
+  });
+
+  document.getElementById("editor-save").addEventListener("click", () => {
+    const text = editorText.value;
+    const parsed = parseList(text);
+    const ids = parsed.sections.flatMap(s => s.groups.flatMap(g => g.items.map(i => i.id)));
+    if (!ids.length) { toast("No items found. Put one item per line."); return; }
+    const before = new Set(Object.keys(store.status));
+    const kept = ids.filter(id => before.has(id)).length;
+    store.list = text;
+    saveStore();
+    undoStack.length = 0;
+    build();
+    closeEditor();
+    render();
+    toast(kept ? `Saved: ${ids.length} items, ${kept} kept their status.` : `Saved: ${ids.length} items.`);
+  });
+
+  document.getElementById("reset-btn").addEventListener("click", () => {
+    if (!confirm("Clear every status and start a new trip? The list stays; export a backup first if you want this one.")) return;
+    store.status = {};
+    saveStore();
+    undoStack.length = 0;
+    render();
+    toast("Statuses cleared.");
+  });
+
+  document.getElementById("export-btn").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify({ format: "packing-page", version: 1, ...store }, null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    const slug = (PAGE.title || "packing").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "packing";
+    link.href = URL.createObjectURL(blob);
+    link.download = `${slug}-backup.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  });
+
+  const importFile = document.getElementById("import-file");
+  document.getElementById("import-btn").addEventListener("click", () => importFile.click());
+  importFile.addEventListener("change", () => {
+    const file = importFile.files[0];
+    if (!file) return;
+    file.text().then(text => {
+      const data = JSON.parse(text);
+      if (!data || typeof data.list !== "string" || typeof data.status !== "object") throw new Error("not a packing backup");
+      if (store.list && !confirm("Replace the current list and statuses with this backup?")) return;
+      store = { list: data.list, status: data.status || {} };
+      saveStore();
+      undoStack.length = 0;
+      build();
+      closeEditor();
+      render();
+      toast("Backup restored.");
+    }).catch(error => toast(`Could not import: ${error.message}`)).finally(() => { importFile.value = ""; });
+  });
+
+  // ---- theme -----------------------------------------------------------
+
+  const themeModes = ["auto", "light", "dark"];
+  const themeLabels = { auto: ["◐", "Auto"], light: ["☀", "Light"], dark: ["☾", "Dark"] };
+  const themeButton = document.getElementById("theme-btn");
+  function currentThemeMode() {
+    const theme = document.documentElement.getAttribute("data-theme");
+    return theme === "light" || theme === "dark" ? theme : "auto";
+  }
+  function applyThemeMode(mode) {
+    if (mode === "auto") {
+      document.documentElement.removeAttribute("data-theme");
+      try { localStorage.removeItem("packing-theme"); } catch (error) {}
+    } else {
+      document.documentElement.setAttribute("data-theme", mode);
+      try { localStorage.setItem("packing-theme", mode); } catch (error) {}
+    }
+    const [icon, label] = themeLabels[mode];
+    document.getElementById("theme-icon").textContent = icon;
+    document.getElementById("theme-text").textContent = label;
+  }
+  applyThemeMode(currentThemeMode());
+  themeButton.addEventListener("click", () => applyThemeMode(themeModes[(themeModes.indexOf(currentThemeMode()) + 1) % themeModes.length]));
+
+  // ---- start -----------------------------------------------------------
+
+  build();
+  render();
+  if (!store.list) openEditor();
+
+  // Another tab may have moved things on.
+  window.addEventListener("storage", event => {
+    if (event.key !== STORE_KEY) return;
+    store = loadStore();
+    build();
+    render();
+  });
+</script>
+</body>
+</html>

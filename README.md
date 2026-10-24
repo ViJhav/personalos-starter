@@ -8,7 +8,7 @@ A personal operating system in plain markdown. An external brain for life outsid
 
 This repository is an **empty skeleton**, not my vault. Every file is a template: you fill it in, and it becomes yours. There is no code, no database, and nothing to install beyond a Claude subscription.
 
-**Read [`START-HERE.md`](START-HERE.md) first.** It walks through the ten-minute setup, then `CLAUDE.md` runs a short interview that fills in the rest by asking you questions.
+**Read [`START-HERE.md`](START-HERE.md) first.** It walks through the ten-minute setup, then a short interview (`prompts/setup.md`) fills in the rest by asking you questions, followed by a deeper one you answer at your own pace. Both are safe to stop and rerun.
 
 Download it with **Code → Download ZIP** above, or clone it. Either way, rename the folder to whatever you like and delete the `.git` directory if you would rather not keep it under version control.
 
@@ -28,6 +28,7 @@ Shared as-is under the MIT license, because it was useful to me and might be use
 | `areas/` | Ongoing parts of life that never finish (health, money, home). Routines live inside their area. |
 | `projects/` | Time-bound efforts with a "done". One folder each. |
 | `prompts/` | Saved routines. Run one with `/prompt <name>`. |
+| `extras/` | Optional tools that sit beside the vault, e.g. `extras/packing-page/`, a one-file tap-through packing checklist. |
 
 ## Two layers
 

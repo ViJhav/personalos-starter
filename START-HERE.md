@@ -42,11 +42,15 @@ If you would rather watch it work for the first session before trusting it, use 
 
 ## 5. Say "let's set this up"
 
-Type exactly that. Claude will read `CLAUDE.md`, find the setup interview, and walk you through it one question at a time.
+Type exactly that. Claude will read `CLAUDE.md`, find the setup (`prompts/setup.md`), and walk you through it one question at a time.
 
-It will ask what you are carrying right now, which parts of life need a home, how you want to be worked with, and when a weekly review would realistically happen. Then it writes all of that into the files and deletes the interview so it does not run again.
+It will ask what you are carrying right now, which parts of life need a home, how you want to be worked with, and when a weekly review would realistically happen. It writes each part into the files as soon as it is answered.
 
-You can stop partway. Whatever you have covered gets written down.
+You can stop partway, and you can run it again any time with `/prompt setup` or "continue setup". It checks the files first and only asks about what is still missing, so nothing gets asked twice and nothing you wrote gets overwritten.
+
+### Then the deep pass, at your own pace
+
+Once the quick setup is done, Claude offers a second, deeper interview for each part of your life. Instead of more questions in chat, it writes a question file (`areas/readme-interview.md`) that you fill in over a few days, whenever. Then it asks a few follow-ups and drafts each area's README from your answers. Nothing gets written into a README until you have seen the draft. Say "continue the area interview" whenever you have added answers.
 
 ### If it seems clueless
 
@@ -56,7 +60,7 @@ If the reply is generic, or it asks what you want to work on instead of starting
 
 It should name `CLAUDE.md`, `README.md`, and `current-state.md`. If it names none of those, or says the folder is empty, go back to step 3 and select the folder that has `START-HERE.md` directly inside it.
 
-If it does name them and still did not start the interview, just say: *run the first-time setup interview in CLAUDE.md.*
+If it does name them and still did not start the interview, just say: *run prompts/setup.md.*
 
 ## After that
 
@@ -78,6 +82,10 @@ Worth knowing before you put your life in here.
 - **Legal caveat worth taking seriously:** AI chat history has been treated as discoverable, so there is no reliable expectation of privacy over it. If you are involved in a dispute, a claim, or anything that could end up in litigation, keep it out of this vault and out of these conversations. Everything else is fair game.
 
 Anthropic's own description of what leaves your machine: <https://code.claude.com/docs/en/data-usage>
+
+### If you started with an older copy
+
+Earlier versions kept the interview inside `CLAUDE.md` and deleted it when finished, so a half-done setup had no clean way to resume. To upgrade: copy the new `prompts/setup.md`, `prompts/area-interview.md`, and `.claude/commands/prompt.md` into your folder (replace if asked), then say *run prompts/setup.md*. It removes the old block, keeps everything you already filled in, and picks up where you left off.
 
 ## A few things worth knowing
 

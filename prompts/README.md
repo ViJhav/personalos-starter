@@ -4,10 +4,12 @@ Saved routines. Each file is a set of instructions for Claude to follow.
 
 Run one by typing `/prompt <name>`, for example `/prompt weekly-review` or `/prompt inbox-triage`. Claude matches the name loosely, so `/prompt weekly` works too. Typing `/prompt` on its own lists what is here.
 
-Two ship with the vault:
+Four ship with the vault:
 
 - **`weekly-review.md`** — the one ritual that matters. Fifteen to twenty minutes, once a week.
 - **`inbox-triage.md`** — empty the inbox into real homes. Run it whenever the inbox gets full.
+- **`setup.md`** — the first-time interview. Safe to rerun: it only asks about what is still missing.
+- **`area-interview.md`** — the deep pass that fills each area README from a question file you answer at your own pace.
 
 ## Adding your own
 

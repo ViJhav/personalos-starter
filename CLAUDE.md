@@ -70,72 +70,14 @@ Reconciling stale project files, state files, and backlogs is not process. That 
 
 ## How to work with me
 
-_This section is empty on purpose. The setup interview below fills it in, and it should keep growing over time. Whenever you get a correction about tone, pace, format, or how much to check in, that is a candidate to write down here so it stops needing to be repeated._
+_This section is empty on purpose. The setup fills it in, and it should keep growing over time. Whenever you get a correction about tone, pace, format, or how much to check in, that is a candidate to write down here so it stops needing to be repeated._
 
-<!-- INTERVIEW-BLOCK-START -->
-## First-time setup interview
+_Setup status: run /prompt setup to check what is still open. It only asks about what is missing._
 
-**Trigger:** this block being present at all means setup has never been run. So:
+## Setup
 
-- If the user's first message is any kind of setup or getting-started request ("let's set this up", "let's start", "run the setup", "hi", "what do I do now", "what is this"), run the interview.
-- If their first message is a real task instead, do the task, then offer the interview once, in one line, at the end.
-- Either way, never answer as though you already know them. `current-state.md` is still a template at this point and there is nothing to read about their life yet. Say that plainly instead of producing a generic answer — a vague reply here reads as the tool being broken.
+Setup lives in `prompts/setup.md` (the quick interview) and `prompts/area-interview.md` (the deep pass for each area). Both work out from the files what is already done and only ask about the rest, so they are safe to rerun and to stop halfway.
 
-**Delete this entire block (from INTERVIEW-BLOCK-START to INTERVIEW-BLOCK-END) when the interview is finished, so it cannot run twice.**
-
-### How to run it
-
-**One question at a time.** Ask, wait for the answer, then ask the next one. Do not send a numbered list of eight questions and wait for a wall of text back. That is the single most important instruction here: a long list of embedded questions is exhausting to answer and people skip most of it.
-
-Keep your own turns short. React briefly to each answer so it feels like a conversation, not a form. If an answer is vague, ask one follow-up, then move on. Do not interrogate.
-
-Expect this to take about fifteen minutes. Say that up front, and say the vault is usable straight after, no need to finish everything.
-
-If the user wants to stop partway, that is fine. Write down whatever was covered, note what is still open, and offer to pick it up later.
-
-### The questions
-
-Ask roughly these, in this order, adapting the wording to how the conversation is going.
-
-**Part 1, what you are carrying (this becomes `current-state.md`):**
-
-1. What is taking up the most space in your head right now? Just the top few things, no need to be exhaustive.
-2. For each of those, where does it actually stand, and what is the next thing that needs to happen? Take them one at a time.
-3. Is anything time-critical? Real deadlines only, not vague future dates.
-4. What is constraining you right now? Time, money, energy, health, someone else's schedule, travel.
-5. Anything you are deliberately not touching at the moment? Naming it means it stops nagging.
-
-**Part 2, the shape of your life (this becomes `areas/` and `projects/`):**
-
-6. Which parts of life feel like they need a home here? Offer the common ones as a menu rather than an open question: health, money, home, work-adjacent admin, relationships, learning, travel, hobbies, pets, car. Only create what they actually name. Do not create empty areas speculatively.
-7. Is anything a project, meaning it has an end state and a "done"? A trip, a move, a course, a renovation, a job search.
-
-**Part 3, how you want to be worked with (this becomes "How to work with me" above):**
-
-8. When you ask for something, do you want it done and then shown to you, or proposed first? Explain the tradeoff in one sentence: proposing first is safer but adds a round trip to everything.
-9. How do you like information delivered? Short and direct, or with more context and reasoning? Do long answers help or overwhelm?
-10. Is there anything that consistently frustrates you about working with AI assistants? This one matters, ask it properly and listen to the answer. Write down what they say close to verbatim.
-11. When you are overwhelmed or stuck, what actually helps? Being given one next action, being asked a question, being left alone, having things broken smaller?
-
-**Part 4, rhythm:**
-
-12. When would a weekly review realistically happen? Pick an actual day. Fifteen to twenty minutes. If the honest answer is "it will not", say that a review that does not happen is fine and the vault still works, it just drifts.
-
-### What to write when it is done
-
-Do all of this, then show a summary:
-
-1. **`current-state.md`**: fill it in from Part 1. Real content, not placeholders. Set the date.
-2. **`areas/<name>/README.md`**: one folder per area named in Part 2, using the template in `areas/README.md`. Fill in whatever came up in conversation. Leave the rest as prompts to fill later.
-3. **`projects/<name>/README.md`**: same, for anything named in Part 7.
-4. **The "How to work with me" section of this file**: write Part 3 into it as concrete instructions to yourself, phrased as rules you will follow. Be specific. "Prefers short answers" is useless. "Lead with the answer, then the reasoning underneath. Do not restate the question back" is usable. Include their frustrations as things to actively avoid.
-5. **`weekly-plan.md`**: a real first week, drawn from what they said. Only things genuinely happening this week.
-6. **`inbox.md`**: anything that came up but does not have a home yet.
-7. **Delete this interview block**, from START to END marker.
-
-Then tell them, briefly:
-- What you created.
-- That `CLAUDE.md` is theirs to edit, and the "How to work with me" section is the one that will pay off most over time. Every time they correct you on style or process, that correction should get written down there.
-- The one habit that makes the whole thing work: dump into `inbox.md` whenever, and do the weekly review. Everything else is optional.
-- That they can type `/prompt weekly-review` or `/prompt inbox-triage` to run the two saved routines.
-<!-- INTERVIEW-BLOCK-END -->
+- If the user's message is any kind of setup or getting-started request ("let's set this up", "continue setup", "hi", "what do I do now", "what is this"), run `prompts/setup.md`.
+- If `current-state.md` is still the template and their message is a real task, do the task, then offer setup once, in one line, at the end. Do not answer as though you already know them: say plainly there is nothing about their life in the vault yet, rather than producing a generic answer that reads as the tool being broken.
+- "Continue the area interview" (or similar) runs `prompts/area-interview.md`.
